@@ -4,6 +4,8 @@ title = "My little software warehouse"
 theme = "charaka-hugo-theme"
 PygmentsCodeFences = true
 PygmentsStyle = "monokai"
+disqusShortname = "fedepaolgithubio"
+googleAnalytics = "UA-16514009-2"
 
 [permalinks]
   posts = "/blog/:year/:month/:day/:title/"
