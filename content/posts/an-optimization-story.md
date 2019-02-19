@@ -3,6 +3,7 @@ title = "An optimization story"
 date = "2019-02-13"
 slug = "2019/02/13/an-optimization-story"
 Categories = []
+draft = true
 +++
 ## There are some scenarios where the order matters
 
