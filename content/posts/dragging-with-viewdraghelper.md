@@ -1,5 +1,5 @@
 +++
-title = "dragging with viewdraghelper"
+title = "Dragging with viewdraghelper"
 date = "2014-09-01"
 slug = "2014/09/01/dragging-with-viewdraghelper"
 Categories = []

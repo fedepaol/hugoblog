@@ -1,5 +1,5 @@
 +++
-title = "cached rest requests with rxjava"
+title = "Cached rest requests with rxjava"
 date = "2016-01-01"
 slug = "2016/01/01/cached-rest-requests-with-rxjava"
 Categories = []

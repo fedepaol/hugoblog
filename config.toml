@@ -1,42 +1,37 @@
 baseURL = "http://fedepaol.github.io/"
 languageCode = "en-us"
 title = "My little software warehouse"
-theme = "hugo-theme-bootstrap4-blog"
+theme = "charaka-hugo-theme"
 PygmentsCodeFences = true
 PygmentsStyle = "monokai"
+
 [permalinks]
   posts = "/blog/:year/:month/:day/:title/"
 
-[[menu.sidebar]]
-  name = "Link 1"
-url = "https://example.com"
-description = "fava"
-
-[[menu.main]]
-    identifier = "about"
-    name = "about me"
-    pre = "<i class='fa fa-heart'></i>"
-    url = "/about/"
-    weight = -110
 
 [params]
   author = "Federico Paolinelli"
-  GitHubUser = "fedepaol"
-
   # Description/subtitle for homepage (can be Markdown)
   description = "Random ramblings on software development"
 
-[params.sidebar]
-    about = "Lead developer with electronic trading software by day, passionate about opensource. I spend a lot of my spare time writing Android software before, Go more recently. Table Tennis player, snowboarder, dad. I also contributed to Firefox for Android"
 
 
-    # How many posts to show on the sidebar (Default: 5)
-    #num_recent_posts = 2
+[[params.social]]
+  url = "https://twitter.com/fedepaol"
+  fa_icon = "fab fa-twitter"
 
-[params.social]
-# Optional, used for attribution in Twitter cards (ideally not a person
-# for example: nytimes, flickr, NatGeo, etc).
-# See: https://dev.twitter.com/cards/types/summary-large-image
-twitter = "fedepaol"
+[params.highlight]
+  style = "zenburn"
 
+[[params.social]]
+  url = "about"
+  fa_icon = "fas fa-info" 
+
+[[params.social]]
+  url = "https://github.com/fedepaol"
+  fa_icon = "fab fa-github"
+
+[[params.social]]
+  url = "www.linkedin.com/in/federico-paolinelli-2374954/"
+  fa_icon = "fab fa-linkedin-in"
 

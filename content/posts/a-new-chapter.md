@@ -1,5 +1,5 @@
 +++
-title = "a new chapter"
+title = "A new chapter"
 date = "2018-10-26"
 slug = "2018/10/26/a-new-chapter"
 Categories = []

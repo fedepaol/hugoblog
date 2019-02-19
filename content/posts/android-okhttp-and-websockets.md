@@ -1,5 +1,5 @@
 +++
-title = "android okhttp and websockets"
+title = "Android okhttp and websockets"
 date = "2017-04-30"
 slug = "2017/04/30/android-okhttp-and-websockets"
 Categories = []

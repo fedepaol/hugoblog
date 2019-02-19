@@ -1,5 +1,5 @@
 +++
-title = "happines is relative"
+title = "Happines is relative"
 date = "2016-04-20"
 slug = "2016/04/20/happines-is-relative"
 Categories = []

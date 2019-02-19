@@ -1,5 +1,5 @@
 +++
-title = "testing rxjava observables subscriptions"
+title = "Testing rxjava observables subscriptions"
 date = "2015-09-13"
 slug = "2015/09/13/testing-rxjava-observables-subscriptions"
 Categories = []

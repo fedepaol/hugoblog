@@ -1,5 +1,5 @@
 +++
-title = "fast messaging with nats and go"
+title = "Fast messaging with nats and go"
 date = "2018-10-27"
 slug = "2018/10/27/fast-messaging-with-nats-and-go"
 Categories = []

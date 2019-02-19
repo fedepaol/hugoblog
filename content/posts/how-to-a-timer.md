@@ -1,5 +1,5 @@
 +++
-title = "how to a timer"
+title = "How to a timer"
 date = "2016-06-20"
 slug = "2016/06/20/how-to-a-timer"
 Categories = []

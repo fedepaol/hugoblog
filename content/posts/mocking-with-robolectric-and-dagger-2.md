@@ -1,5 +1,5 @@
 +++
-title = "mocking with robolectric and dagger 2"
+title = "Mocking with robolectric and dagger 2"
 date = "2015-09-05"
 slug = "2015/09/05/mocking-with-robolectric-and-dagger-2"
 Categories = []

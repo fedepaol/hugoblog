@@ -1,5 +1,5 @@
 +++
-title = "an optimization story"
+title = "An optimization story"
 date = "2019-02-13"
 slug = "2019/02/13/an-optimization-story"
 Categories = []
