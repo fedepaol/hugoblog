@@ -1,9 +1,9 @@
 +++
-title = "An optimization story"
+title = "A concurrency experiment"
 date = "2019-02-13"
-slug = "2019/02/13/an-optimization-story"
-Categories = []
-draft = true
+slug = "2019/02/13/a-concurrency-experiment"
+Categories = [Go, Concurrency]
+
 +++
 ## There are some scenarios where the order matters
 
@@ -17,7 +17,7 @@ So here we have a dilemma: we would like to take advantage of go concurrency sys
 
 Processing the messages in a concurrent fashion would amortise the processing cost of each message. By processing the messages sequentially, a queued message will have to wait all the messages received before.
 
-## So my question is, can we have the best of both worlds?
+## So my question is, can we take advantage of the Go powerful concurrency support for this inherently sequencial problem?
 
 All this to say that I wanted to write a simple example that reorders the messages as soon as they are processed concurrently.
 
@@ -43,11 +43,11 @@ The moving parts are:
 - many [**worker** goroutines](https://github.com/fedepaol/goconcurrencylab/blob/master/fast/main.go#L100) that process the messages sent on the source channel & write on the same output channel
 - a [**result processor** goroutine](https://github.com/fedepaol/goconcurrencylab/blob/master/fast/main.go#L48) that reads the results from the output channel, try to reorder them and then print the output
 
-## First take away lesson
+## Take away lesson
 
-This working example demonstrate how the communicating paradigm makes it easy to handle and manipulate events concurrently with Go. The fact that we do have requirements of sequentiality does not mean that we can't try to take advantage of the multiprocessing powers of Go.
+This working example demonstrate how the communicating paradigm makes it easy to handle and manipulate events concurrently with Go. The fact that we do have requirements of sequentiality does not mean that we can't try to exploit all the cores available in order to take advantage of the multiprocessing powers of Go.
 
-### Further optimizations
+### Where to go from here
 
 During the first implementation, I kept the "reordering part" as simple as I could, meaning that the events are just appended to a slice, then the result processor keeps a "last processed" sequence number and tries to retrieve the next event to be emitted.
 
@@ -73,7 +73,12 @@ The code for the "draining part" is:
 }
 ```
 
-I wrote the code in the first way it came to my mind, thinking that I could leverage the profiling tools provided by Go in order to see how to optimize it.
+This code is definitely not optimized, we could leverage the profiling tools provided by Go in order to see how to optimize it.
+
+### Fallacies
+
+The alignement assumes that the concurrent calls will take (almost) the same amount of time and that they will eventually end.
+A non terminating goroutine would result in blocking the entire flow. A smarter implementation should take timeouts into account.
 
 
 
