@@ -2,7 +2,7 @@
 title = "A concurrency experiment"
 date = "2019-02-13"
 slug = "2019/02/13/a-concurrency-experiment"
-Categories = [Go, Concurrency]
+Categories = ["Go", "Concurrency"]
 
 +++
 ## There are some scenarios where the order matters
@@ -43,9 +43,21 @@ The moving parts are:
 - many [**worker** goroutines](https://github.com/fedepaol/goconcurrencylab/blob/master/fast/main.go#L100) that process the messages sent on the source channel & write on the same output channel
 - a [**result processor** goroutine](https://github.com/fedepaol/goconcurrencylab/blob/master/fast/main.go#L48) that reads the results from the output channel, try to reorder them and then print the output
 
-## Take away lesson
+### The results
 
-This working example demonstrate how the communicating paradigm makes it easy to handle and manipulate events concurrently with Go. The fact that we do have requirements of sequentiality does not mean that we can't try to exploit all the cores available in order to take advantage of the multiprocessing powers of Go.
+Non concurrent:
+```
+	go run .  0,37s user 0,31s system 1% cpu 49,069 total
+```
+
+Concurrent:
+```
+	go run .  0,33s user 0,17s system 66% cpu 0,745 total
+```
+
+## Take home lesson
+
+This working example demonstrates how the communicating paradigm makes it easy to handle and manipulate events concurrently with Go. The fact that we do have requirements of sequentiality does not mean that we can't try to exploit all the cores available in order to take advantage of the multiprocessing powers of Go.
 
 ### Where to go from here
 
@@ -78,7 +90,8 @@ This code is definitely not optimized, we could leverage the profiling tools pro
 ### Fallacies
 
 The alignement assumes that the concurrent calls will take (almost) the same amount of time and that they will eventually end.
-A non terminating goroutine would result in blocking the entire flow. A smarter implementation should take timeouts into account.
+
+A non terminating goroutine would result in blocking the entire flow: a smarter (and production ready) implementation should take timeouts into account.
 
 
 
