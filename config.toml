@@ -34,6 +34,6 @@ googleAnalytics = "UA-16514009-2"
   fa_icon = "fab fa-github"
 
 [[params.social]]
-  url = "www.linkedin.com/in/federico-paolinelli-2374954/"
+  url = "https://linkedin.com/in/federico-paolinelli-2374954/"
   fa_icon = "fab fa-linkedin-in"
 
