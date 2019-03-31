@@ -19,6 +19,8 @@ Processing the messages in a concurrent fashion would amortise the processing co
 
 ## So my question is, can we take advantage of the Go powerful concurrency support for this inherently sequential problem?
 
+And is it hard?
+
 All this to say that I wanted to write a simple example that reorders the messages as soon as they are processed concurrently.
 
 The basic idea is to mark each message with a sequence number, handle many messages concurrently, and pass the results to another goroutine that will then reorder the. 
@@ -43,6 +45,8 @@ The moving parts are:
 - many [**worker** goroutines](https://github.com/fedepaol/goconcurrencylab/blob/master/fast/main.go#L100) that process the messages sent on the source channel & write on the same output channel
 - a [**result processor** goroutine](https://github.com/fedepaol/goconcurrencylab/blob/master/fast/main.go#L48) that reads the results from the output channel, try to reorder them and then print the output
 
+**The whole project can be found [here](https://github.com/fedepaol/goconcurrencylab)**
+
 ### The results
 
 Non concurrent:
@@ -55,7 +59,7 @@ Concurrent:
 	go run .  0,33s user 0,17s system 66% cpu 0,745 total
 ```
 
-## Take home lesson
+## The take home lesson
 
 This working example demonstrates how the communicating paradigm makes it easy to handle and manipulate events concurrently with Go. The fact that we do have requirements of sequentiality does not mean that we can't try to exploit all the cores available in order to take advantage of the multiprocessing powers of Go.
 
