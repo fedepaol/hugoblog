@@ -1,7 +1,7 @@
 +++
 title = "A concurrency experiment"
-date = "2019-02-13"
-slug = "2019/02/13/a-concurrency-experiment"
+date = "2019-03-30"
+slug = "2019/03/30/a-concurrency-experiment"
 Categories = ["Go", "Concurrency"]
 
 +++
@@ -17,7 +17,7 @@ So here we have a dilemma: we would like to take advantage of go concurrency sys
 
 Processing the messages in a concurrent fashion would amortise the processing cost of each message. By processing the messages sequentially, a queued message will have to wait all the messages received before.
 
-## So my question is, can we take advantage of the Go powerful concurrency support for this inherently sequencial problem?
+## So my question is, can we take advantage of the Go powerful concurrency support for this inherently sequential problem?
 
 All this to say that I wanted to write a simple example that reorders the messages as soon as they are processed concurrently.
 
