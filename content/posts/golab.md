@@ -1,7 +1,6 @@
 ---
 title: "GoLab 2019"
 date: 2019-10-23T22:23:55+02:00
-draft: true
 ---
 
 ### Intro
