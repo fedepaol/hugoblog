@@ -1,26 +1,36 @@
 ---
 title: "How and why to contribute to Open Source"
 date: 2019-11-06T21:07:08+01:00
-draft: true
+draft: false
 ---
 
-Today I am going to write a non technical post, but about a topic I particularly care about.
-
-It also feels like a good way to start 2020.
-
-
-## Contributing to opensource is giving something to get something back
+Today I am writing about **contributing to open source**, an argoment that I particularly care about.
 
 ![](/images/opensource/quidproquo.jpg)
 
-What you are giving away is your time and (eventually) your expertise.
+#### Contributing to opensource is giving something to get something back
 
-## There are several reasons for contributing to an opensource project
+You give away your time and your expertise and you'll eventually get something back.
 
-- you need a feature in an oss project you rely on
+
+#### Approaching an open source project may be daunting at first
+
+We find a lot of reasons for that:
+
+- We don't feel good enough
+- We think the project is too complex
+- We are afraid of rejections
+
+The truth is, everyone can find a project to add value to, starting from small things to more complex ones.
+
+**Contributors are a rare commodity**, and the maintainers will try to do their best to make you feel comfortable and stick on the project.
+
+### There are several reasons for contributing to an open source project
+
+- you need a feature in an oss project you use 
 - you want to learn
-- you want to earn street credibility (more on this later)
 - it feels good (it really does)
+- you want to earn credibility
 
 To me, it was a combination of those. My first experience with open source was related to my ramblings about Android and when I wanted to see what it felt like contributing in a bigger Android app. That's when I started [contributing to Firefox for Android](http://fedepaol.github.io/blog/2013/07/29/contributing-to-firefox-for-android/).
 
@@ -29,7 +39,7 @@ It turned out to be one of the best moves I have ever made for my career, not be
 ### Open Source code is different
 
 And it's different in a better way. 
-There is generally more emphasis on writing readable and maintainable code, because contributors may come and go.
+There is generally more emphasis on writing readable and maintainable code, because of many reasons.
 
 This has two implications: 
 
@@ -64,7 +74,7 @@ You are adding value to a project you are already using, and what's more, you'll
 
 With just one advice: **always remember to discuss the feature first** (eventually, in an issue). This will save you a lot of time in case the maintaners don't think the issue fits the scope of the project.
 
-### If you want to contribute for learning (or looking better :-) )
+### If you want to contribute for learning
 
 #### First step: find the right project
 
@@ -77,7 +87,8 @@ What you should look for:
 - contributing guidelines
 - good first issue (or similar) labels
 - a good number of opened issue to work on
-- developers guidelines
+
+Contributing guidelines might be outdated, but they still show the good intentions of helping contributors.
 
 You may want to clone the project and try to build it, to see how the dev experience look like.
 
@@ -92,7 +103,11 @@ Other indicators of a good project:
 - Continuous Integration
 - Releases / meaningful tags
 
+You want to contribute to something that is properly released and people are using, and the lack of releases is often a red flag.
+
 ## You don't need to be a super skilled developer
+
+I am repeating again, because starting is the hardest thing.
 
 In all projects there are different problems of different levels.
 
@@ -100,15 +115,11 @@ Just start with something simple, to get familiar with the people, the developme
 
 This is exactly the reason why we put "good first issue" labels.
 
-**Remember that a new contributor is really appreciated, and the maintainers will do their best to keep you happy**.
-
-Just step in, say hi and let things happen.
+Just step in, say hi and let things happen. People (even the "rockstar" ones) are happy to help when new contributors approach.
 
 ## What do you get back
 
-Contributing to a project can drain a lot of energy. Now that I have kids, I find it exremely difficult to find the time to do some contributions.
-
-On the other hand, there a lot of you'll get back. 
+Contributing to a project can drain a lot of energy. Now that I have kids, I find it exremely difficult to find the time to do some contributions but still, I keep trying.
 
 ### You will learn a lot
 
@@ -126,30 +137,25 @@ As somebody who worked for a local company for almost 15 years, I can't state en
 
 You'll eventually get new friends, and friends help each other. You'll have somebody outside your local bubble to ask for advices (and to drink a beer with during conferences).
 
-### A good mark on your resume
+### Will make your resume shine
 
 Spending some of your free time writing code shows passion and willingness to learn, which are priceless values in our job.
 
 Every time I had an interview, people asked me how contributing to Firefox looked like. 
 
 If you pick the right project, you will make a good impression as a candidate.
-In case you are a new graduate, it will make an even bigger difference: while the other freshmen will put their lab projects on their resume, you will put a well known project that everybody use.
+In case you are a new graduate, it will make an even bigger difference compared to the other freshmen.
 
-Finally, by working on an oss project you demonstrate to be able to work in a remote environment, which can be taken as a plus in case you want to apply to remote positions.
+Finally, by working on an oss project you demonstrate to be able to work in a remote environment which could make it easier to land a remote position.
 
 ### It feels goods
 
-The key word here is "community".
-Nowdays, a lot of the software we use come from there. People putting in their time to make it work. **It really feels good to be able to contribute something back**.
+OpenSource is everywhere, and used in a lot of places. **It really feels good to be able to contribute something back**, to see a final result as a collective effort you took part to.
 
 The idea of a collective contribution to something that makes the state of the technology go forward is really romantic, and despite I am not an OSS integralist, I really appreciate it.
 
 ![](/images/opensource/communism.jpg)
 
+## Wrap Up
 
-## Next steps
-
-- learn the github workflow
-- pick a project
-- find an issue and say hi
-- be nice (and humble)
+Contributing is hard, and may be daunting at first. But **it's totally worth it**. You'll learn, make your resume better and make new friends. I strongly recommend to do the first step, ask to fix an issue or to contribute in some way. And follow the events.
