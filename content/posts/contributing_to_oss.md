@@ -1,6 +1,6 @@
 ---
 title: "How and why to contribute to Open Source"
-date: 2019-11-06T21:07:08+01:00
+date: 2020-02-13T21:07:08+01:00
 draft: false
 ---
 
