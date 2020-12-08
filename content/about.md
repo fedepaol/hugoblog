@@ -4,7 +4,7 @@ date: 2019-02-18T13:45:02+01:00
 ---
 
 
-Lead developer with electronic trading software by day, passionate about opensource. Used to write a lot of code in my spare time. Now I am a dad and you know where most of my spare time goes to. But I keep trying!
+Principal Software Engineer at Red Hat, passionate about opensource. Used to write a lot of code in my spare time. Now I am a dad and you know where most of my spare time goes to, but luckily I found a job that satisfies my needs :-)
 
 ### Interests
 
@@ -12,9 +12,11 @@ I've done **a lot** of Android in my spare time. It was kind of a second job. I 
 
 In the past year (2018) I stopped working on Android and I spent the (little) spare time I have learning  Go and distributed systems stuff.
 
+In 2019, I joined Red Hat to work in the kubernetes ecosystem.
+
 ### Opensource Contributions
 
-I've been contributing to Firefox for Android intensively (2013-2014). Since summer 2018 I am contributing to Athens, the proxy for Go dependencies.
+I've been contributing to Firefox for Android intensively (2013-2014). Since summer 2018 I am contributing to Athens, the proxy for Go dependencies. In early 2020 I was made contributor of Athens.
 
 ### Public Speaking
 - 2014: (O)Authenticated rest applications in Android - Droidcon Italy [slides](https://speakerdeck.com/fedepaol/o-authenticated-rest-interaction-in-android) / [video](https://www.youtube.com/watch?v=qmci4wr0x8U)
