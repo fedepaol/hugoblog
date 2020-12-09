@@ -12,7 +12,7 @@ I've done **a lot** of Android in my spare time. It was kind of a second job. I 
 
 In the past year (2018) I stopped working on Android and I spent the (little) spare time I have learning  Go and distributed systems stuff.
 
-In 2019, I joined Red Hat to work in the kubernetes ecosystem.
+In 2019, I joined Red Hat to work in the kubernetes ecosystem. I am part of the Telco 5G network team, where we contribute to OpenShift with features that make it possible to run telco workoads on an OpenShift cluster.
 
 ### Opensource Contributions
 
