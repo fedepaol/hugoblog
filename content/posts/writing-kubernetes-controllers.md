@@ -1,13 +1,12 @@
 ---
-title: "Writing a Kubernetes Controller"
+title: "Writing a Kubernetes Controller: part 1"
 date: 2020-12-07T23:01:51+01:00
-draft: true
 categories: ["Go", "Kubernetes"]
 ---
 
 Even when knowing Go, writing a **Kubernetes controller** is intimidating.
 
-In this post, I'll introduce the Kubernetes operating model, how objects are mapped and what are the tools provided by the go-client framework to write bullet proof controllers. 
+In this post, I'll introduce the Kubernetes operating model, how objects are mapped and what are the tools provided by the go-client framework to write bullet proof controllers. In a following post I will explain how to put all the pieces together and how to define and consume custom types.
 
 I will describe the core components like:
 
@@ -337,6 +336,6 @@ The `Forget` method is how we notify the queue the item was processed successful
 
 Implementing this type of behaviour requires extra logic in place (idempotency among the others) to make sure the event is reconciled properly.
 
-In the next blogpost, I will cover how the code looks like, how we can implement the same mechanisms for user defined types, and how to use the non type-safe client.
+In the next post, I will cover how the code looks like, how we can implement the same mechanisms for user defined types, and how to use the non type-safe client.
 
 If you liked this post, [consider following me on twitter](https://twitter.com/fedepaol).
