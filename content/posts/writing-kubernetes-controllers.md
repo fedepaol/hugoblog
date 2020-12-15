@@ -30,23 +30,23 @@ In the following (abused) example of `ReplicaSet`, we ask the cluster to deploy 
 
 
 ```yaml
-apiVersion: apps/v1
-kind: ReplicaSet
-metadata:
-  name: frontend
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      tier: frontend
-  template:
-    metadata:
-      labels:
-        tier: frontend
-    spec:
-      containers:
-      - name: php-redis
-        image: gcr.io/google_samples/gb-frontend:v3
+	apiVersion: apps/v1
+	kind: ReplicaSet
+	metadata:
+	  name: frontend
+	spec:
+	  replicas: 3
+	  selector:
+	    matchLabels:
+	      tier: frontend
+	  template:
+	    metadata:
+	      labels:
+		tier: frontend
+	    spec:
+	      containers:
+	      - name: php-redis
+		image: gcr.io/google_samples/gb-frontend:v3
 ```
 
 When we change our mind, and we set the number of replicas to 2, we are not sending a command to the cluster asking to remove a pod, we are declaring the new state we want the cluster to be in. **This makes a substantial difference and is the key in understanding how Kubernetes works**.
