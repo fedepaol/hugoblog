@@ -1,4 +1,4 @@
-baseURL = "http://fedepaol.github.io/"
+baseURL = "/"
 languageCode = "en-us"
 title = "My little software warehouse"
 theme = "charaka-hugo-theme"
