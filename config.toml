@@ -1,11 +1,22 @@
 baseURL = "https://fedepaol.github.io/"
-languageCode = "en-us"
+languageCode = "en"
 title = "My little software warehouse"
-theme = "charaka-hugo-theme"
-PygmentsCodeFences = true
-PygmentsStyle = "monokai"
+theme = "hugo-coder"
+#theme = "charaka-hugo-theme"
 disqusShortname = "fedepaolgithubio"
 googleAnalytics = "UA-16514009-2"
+paginate = 20
+enableEmoji = true
+# Specify light/dark colorscheme
+# Supported values:
+# "auto" (use preference set by browser)
+# "dark" (dark background, light foreground)
+# "light" (light background, dark foreground) (default)
+colorScheme = "auto"
+# Hide the toggle button, along with the associated vertical divider
+hideColorSchemeToggle = false
+# Series see also post count
+maxSeeAlsoItems = 5
 
 [permalinks]
   posts = "/blog/:year/:month/:day/:title/"
@@ -15,25 +26,66 @@ googleAnalytics = "UA-16514009-2"
   author = "Federico Paolinelli"
   # Description/subtitle for homepage (can be Markdown)
   description = "Random ramblings on software development"
-
-
-
-[[params.social]]
-  url = "https://twitter.com/fedepaol"
-  fa_icon = "fab fa-twitter"
+  avatarurl = "images/me.jpg"
+  info = ["Software engineer, Red Hatter, gopher, distributed systems geek,", "MetalLB maintainer,", "I gave a couple of talks too"]
 
 [params.highlight]
   style = "zenburn"
 
 [[params.social]]
-  url = "about"
-  fa_icon = "fas fa-info" 
+  url = "https://twitter.com/fedepaol"
+  weight = 1
+  icon = "fa fa-2x fa-twitter"
 
 [[params.social]]
   url = "https://github.com/fedepaol"
-  fa_icon = "fab fa-github"
+  weight = 2
+  icon = "fa fa-2x fa-github"
 
 [[params.social]]
+  name = "LinkedIn"
+  icon = "fa fa-2x fa-linkedin"
+  weight = 3
   url = "https://linkedin.com/in/federico-paolinelli-2374954/"
-  fa_icon = "fab fa-linkedin-in"
 
+
+[[params.social]]
+  name = "Mastodon"
+  icon = "fa fa-2x fa-mastodon"
+  weight = 4
+  url = "https://hachyderm.io/@fedepaol"
+
+
+[markup.highlight]
+noClasses = false
+style = "monokai"
+
+# If you want to use Google Tag Manager(https://analytics.google.com/) for analytics, add this section
+# [params.googleTagManager]
+# id = "gid"
+
+[taxonomies]
+tag = "tags"
+
+
+[[params.social]]
+name = "RSS"
+icon = "fa fa-2x fa-rss"
+weight = 6
+url = "https://fedepaol.github.io/index.xml"
+rel = "alternate"
+type = "application/rss+xml"
+
+# Menu links
+[[menu.main]]
+  name = "Blog"
+  weight = 1
+  url  = "posts/"
+[[menu.main]]
+  name = "About"
+  weight = 2
+  url = "about/"
+[[menu.main]]
+  name = "Contact"
+  weight = 3
+  url = "mailto:fedepaol@gmail.com"
