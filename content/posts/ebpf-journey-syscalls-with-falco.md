@@ -1,8 +1,7 @@
 ---
 title: "eBPF journey by examples: eBPF tracepoints with Falco"
-date: 2023-04-06T15:01:51+01:00
+date: 2023-08-21T15:01:51+01:00
 categories: ["Go", "ebpf", "kprobe", "tracepoint"]
-draft: true
 description: Discover eBPF's power with tracepoints and KProbes through practical examples. Explore how Falco, a cloud-native security tool, leverages these techniques for Linux system monitoring. Learn to implement user space logic using Go and uncover the complexities of eBPF programming.
 ---
 
