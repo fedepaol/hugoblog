@@ -160,7 +160,7 @@ Also, the tos flags are preserved.
 
 ## A hidden gem
 
-While looking for all the eBPF programs in the repo, I found [this sockops program](https://github.com/facebookincubator/katran/blob/6cb4f69303a705a1a3b54bc2776611a85ae3099f/katran/tpr/bpf/tcp_pkt_router_kern.c#L109). After digging a bit, my understanding is that it allows the server to send the serverid to the client directly into the tcp header
+While looking for all the eBPF programs in the repo, I found [this sockops program](https://github.com/facebookincubator/katran/blob/6cb4f69303a705a1a3b54bc2776611a85ae3099f/katran/tpr/bpf/tcp_pkt_router_kern.c#L109). After digging a bit, my understanding is that it allows the server to send the serverid to the client directly into the tcp header options
 (in the syn/ack message):
 
 ```C
@@ -236,10 +236,123 @@ is already contained in the tcp header, in the [following part](https://github.c
 
 ### Poor man's version
 
-Here I will try to mimic the very minimum of what Katran implements:
+Here I will try to mimic the very minimum of what Katran implements, avaliable at the [following link](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample).
 
-- A map that contains the VIP / real mapping
-- The IPIP encapsulation
+The parameters are fixed, but fed via a BPF_MAP_TYPE_ARRAY to the program. A fancier and more complex application might have a map
+depending on the VIP and other parameters. The parameters include:
 
-A simple docker-compose configuration allows the following topology:
+- The mac address of the next hop
+- The VIP to be translated
+- The IP of the "real"
 
+The program does the filtering of non IPV4 packets, and non TCP packets, and then leverages the encapsulation logic stolen from Katran:
+
+It reads the arguments from the map provided by the Go side:
+
+```C
+  struct arguments *args = 0;
+  __u32 key = 0;
+  args = (struct arguments *)bpf_map_lookup_elem(&xdp_params_array, &key);
+  if (!args)
+  {
+    bpf_printk("no args");
+    return XDP_PASS;
+  }
+```
+
+After that it prepares the encapsulated packet:
+
+```C
+  if (bpf_xdp_adjust_head(xdp, 0 - (int)sizeof(struct iphdr))) // 1
+  {
+    return false;
+  }
+
+  memcpy(new_eth->h_dest, dst_mac, 6); // 2
+  if (old_eth->h_dest + 6 > data_end)
+  {
+    return false;
+  }
+  memcpy(new_eth->h_source, old_eth->h_dest, 6); // 3 
+  new_eth->h_proto = BE_ETH_P_IP;
+
+  create_v4_hdr(
+    iph,
+    saddr,
+    daddr,
+    pkt_bytes,
+    IPPROTO_IPIP); // 4
+```
+
+It:
+
+- Makes room for the header of the IPIP tunnel (1)
+- Sets the source mac address using the original destination one, the one of the interface (2)
+- Sets the destination mac address as the one provided by the parameters (the gateway one) (3)
+- Creates the IPIP header using the destination of the real as the destination IP
+
+## Testing it (for real)
+
+The [repro subfolder](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample/repro) contains the setup I used
+to validate my ramblings were correct.
+
+I used a container-based environment using `docker-compose` (I know, it's not a-la-mode anymore) with multiple
+networks, setting the right routes in the various containers.
+
+The containers layout look a bit like:
+
+```raw
+              10.111.220.0                     10.111.222.0/24
+
+┌──────────────────┐       ┌───────────────────┐        ┌───────────────────┐
+│                  │       │                   │        │                   │
+│                  │ ◄─────┼───────────────────┼────────┤                   │
+│                  │       │                   │        │                   │
+│    Client        ├──────►│  Gateway          │        │    Real           │
+│                  │       │             ┌─────┼───────►│                   │
+│                  │       │             │     │        │                   │
+│                  │       │             │     │        │                   │
+└──────────────────┘       └──────┬──────┴─────┘        └───────────────────┘
+                                  │      ▲
+                                  │      │
+                                  │      │  10.111.221.0/24
+                                  ▼      │
+                            ┌────────────┴─────┐
+                            │                  │
+                            │                  │
+                            │                  │
+                            │     Katran       │
+                            │                  │
+                            │                  │
+                            └──────────────────┘
+```
+
+Where the gateway container mimics the router, there are three different network segments:
+
+- client - gateway
+- katran - gateway
+- client - real
+
+On the `real` container we also setup an ipip interface as per the instructions on katran.
+
+The setup files can be found in the [github repo](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample/repro/setup).
+
+Another thing to note is that the RP_FILTER parameter must be disabled on the local machine (running 
+`echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter` should make the trick).
+
+## Profit!
+
+Well, no. This is the reason why this second post took so long to be published. I spent endless nights trying to debug why it wasn't
+working. However, I think it's worth sharing some of the tools that I discovered in the process.
+
+### Let's start with TCPDump
+
+The swiss knife that saved me in multiple adventures is USELESS. If the packet is swallowed by XDP (as it happened to me), tcpdump won't
+show anything. In my case, I was seeing only the SYN packet going from the `gateway` to the `katran` container and disappearing.
+
+### XDPDump to the rescue
+
+That's when I got to know [xdpdump](https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump). XDP dump is a bit like TCPDump, but it
+is able to inspect the packets going through (ingressing and egressing) an XDP program. So, by running
+
+xdpdump 
