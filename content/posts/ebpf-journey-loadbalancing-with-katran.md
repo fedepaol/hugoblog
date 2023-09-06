@@ -360,3 +360,5 @@ XDP is very powerful (but also very low level!). It allow us to access to the ra
 mess up with them in a very efficient way. 
 
 Here I showed how Katran leverages XDP to do L4 load balancing, and how the very same setup can be replicated.
+As always, my considerations here are based on my understanding of the documentation and the code. If something
+is not accurate please reach out! 
