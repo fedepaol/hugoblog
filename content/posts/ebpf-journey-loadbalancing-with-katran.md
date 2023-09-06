@@ -1,15 +1,15 @@
 ---
-title: "eBPF journey by examples: xdp redirecting with Katran"
-date: 2023-08-21T15:01:51+01:00
+title: "eBPF journey by examples: L4 load balancing with XDP and Katran"
+date: 2023-09-06T15:01:51+01:00
 categories: ["Go", "ebpf", "xdp"]
-#description: Discover eBPF's power with tracepoints and KProbes through practical examples. Explore how Falco, a cloud-native security tool, leverages these techniques for Linux system monitoring. Learn to implement user space logic using Go and uncover the complexities of eBPF programming.
-draft: true
+description: Explore the power of XDP (eBPF) and dive into the world of efficient load balancing with Katran. Discover how this innovative technology enables network packet redirection and seamless traffic distribution, all while maintaining session consistency.
 ---
 
 # Katran
 
-This is my second post about digging into popular eBPF projects. This time I am looking at [katran](https://github.com/facebookincubator/katran), an xdp based
-loadbalancer opensourced by Meta.
+This is my second post about digging into popular eBPF projects. You can see the first post about Falco and tracepoints [here]({{< ref "/posts/ebpf-journey-syscalls-with-falco" >}}).
+
+This time I am looking at [katran](https://github.com/facebookincubator/katran), an xdp based loadbalancer opensourced by Meta.
 
 A loadbalancer works in a very simple way: it translates network packets directed towards a single virtual IP (VIP) toward a serie of endpoints (`real`s, in katran's lingo),
 while maintaining session consistency (meaning, all the packets belonging to a given tcp session are sent to the same `real`).
@@ -18,15 +18,15 @@ Katran's loadbalancing is peculiar in the sense that:
 
 - it assumes all the `reals` are reacheable via a single next hop katran is configured with, which is expected to do the routing logic
 - works in DSR mode (direct server return), meaning the reply is not getting back through the load balancer but will come directly from the server
-- each real has the VIP associated to a loopback interface. This allows the real to reply to packets directed to the VIP
-- the packet directed to the VIP is encapsulated via IPIP inside a packet directed to the real (this allows the reals to be on different subnets)
+- each `real` has the VIP associated to a loopback interface. This allows the `real` to reply to packets directed to the VIP
+- the packet directed to the VIP is encapsulated via IPIP inside a packet directed to the `real` (this allows the `real`s to be on different subnets)
 
 The flow looks like:
 
 ```none
                                         ┌───────┬───────┬┬──────┬───┬─────┬─┐
                                         │Katran │Real IP││Client│VIP│Data │ │
-                                        │       │       ├┴──────┴───┴─────┘ │
+                                        │  IP   │       ├┴──────┴───┴─────┘ │
                                         │       │       │                   │
               ┌──────┬───┬─────┐        └───────┴───────┴───────────────────┘
               │Client│VIP│Data │
@@ -51,6 +51,9 @@ Where each packet is represented by src, dst and payload.
 
 ## XDP
 
+XDP not only allows to intercept incoming packets, but also to do more fancier things such as modifying those packets
+and sending back, either via the same interface or another.
+
 By leveraging XDP, katran is able to:
 
 - intercept incoming packets directed to the VIP
@@ -64,7 +67,7 @@ The `balancer_ingress` XDP program is the [entry point](https://github.com/faceb
 
 Leaving corner cases aside, what `process_packet` does is:
 
-### finding the dst address corresponding to the packet directed to the `vip`
+### Finding the dst address corresponding to the packet directed to the `vip`
 
 ```C
     if (!dst && !(pckt.flags & F_SYN_SET) &&
@@ -94,12 +97,12 @@ Leaving corner cases aside, what `process_packet` does is:
 
 - if the packet is a SYN packet, the session is a new one and thus it does not make sense to look into the LRU cache
 - if the packet is not a SYN packet, katran performs a lookup into a per-cpu lru cache (1), then into a global LRU cache (2)
-- if the real IP is not found, then a hashing function is performed and the dst is calculated (3)
+- if the `real` IP is not found, then a hashing function is performed and the dst is calculated (3)
 
 One interesting thing to notice is the set of properties related to the vip (`vip_info->flags`), which allow to skip the caches
 for example (the rationale behind this is to avoid filling up the memory).
 
-### Getting the packet destination
+### Load balancing (getting the packet destination)
 
 The computation performed by `get_packet_dst` is stateless and depends on the packet. The gist of the way it (more or less) works is:
 
@@ -118,7 +121,7 @@ The computation performed by `get_packet_dst` is stateless and depends on the pa
 ```
 
 - the hash of the packet is calculated and modulized RING_SIZE
-- the key is RING_SIZE (an array containing all the real indexes for all the vips, ordered in chunks). The i-th VIP chunk is between 
+- the key is RING_SIZE (an array containing all the `real` indexes for all the vips, ordered in chunks). The i-th VIP chunk is between 
 `RING_SIZE * (vip_info->vip_num)`` and `RING_SIZE * (vip_info->vip_num) + RING_SIZE`. My guess is, this allows to have a non even distributions 
 of reals (3)
 - the real is finally fetched (4)
@@ -155,7 +158,7 @@ Once the dst is found, the redirection takes place:
 
 I won't expand too much the details of the encapsulation, that can be found [here](https://github.com/facebookincubator/katran/blob/1f464b97d47750ce0195cf5b7789d7524d8a1110/katran/lib/bpf/pckt_encap.h#L95), as they involve manipulating the headers, setting the right payload, src and dst and recalculating the checksum.
 
-It's interesting to notice that the encapsulation depends on the ip family of the real, and might be of a different family compared to the VIP.
+It's interesting to notice that the encapsulation depends on the ip family of the `real`, and might belong to a different IP family than the VIP.
 Also, the tos flags are preserved.
 
 ## A hidden gem
@@ -206,7 +209,7 @@ To set it back in sequent messages:
       }
 ```
 
-This trick allows the XDP program to avoid even accessing the LRU maps / calculating the id of the real, because the id
+This trick allows the XDP program to avoid even accessing the LRU maps / calculating the id of the `real`, because the id
 is already contained in the tcp header, in the [following part](https://github.com/facebookincubator/katran/blob/7cca2aae1607ab6770d80b08ec640b7f9dc5106f/katran/lib/bpf/balancer_kern.c#L744) of the `process_packet` function I omitted commenting:
 
 ```C
@@ -234,46 +237,43 @@ is already contained in the tcp header, in the [following part](https://github.c
 #endif // TCP_SERVER_ID_ROUTING
 ```
 
-### Poor man's version
+## Poor man's version
 
 Here I will try to mimic the very minimum of what Katran implements, avaliable at the [following link](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample).
 
-The parameters are fixed, but fed via a BPF_MAP_TYPE_ARRAY to the program. A fancier and more complex application might have a map
-depending on the VIP and other parameters. The parameters include:
+Instead of calculating the endpoint that corresponds to the VIP, my program just discard any packet that is not directed
+to the VIP, and translates it to a fixed `real` IP.
 
-- The mac address of the next hop
-- The VIP to be translated
-- The IP of the "real"
+Both the `real` IP and the VIP are passed to the program via a BPF_MAP_TYPE_ARRAY to the program. Additionally, the
+MAC address of the next hop is passed to the program.
 
-The program does the filtering of non IPV4 packets, and non TCP packets, and then leverages the encapsulation logic stolen from Katran:
+The program does the filtering of non IPV4 packets, and non TCP packets, and then leverages 
+the encapsulation logic __stolen__ inspired from Katran.
 
-It reads the arguments from the map provided by the Go side:
+It reads the arguments from the map provided by the Go side and then prepares
+the encapsulated packet to be sent back to the interface:
 
 ```C
   struct arguments *args = 0;
   __u32 key = 0;
-  args = (struct arguments *)bpf_map_lookup_elem(&xdp_params_array, &key);
+  args = (struct arguments *)bpf_map_lookup_elem(&xdp_params_array, &key); // 1
   if (!args)
   {
     bpf_printk("no args");
     return XDP_PASS;
   }
-```
 
-After that it prepares the encapsulated packet:
-
-```C
-  if (bpf_xdp_adjust_head(xdp, 0 - (int)sizeof(struct iphdr))) // 1
+  if (bpf_xdp_adjust_head(xdp, 0 - (int)sizeof(struct iphdr))) // 2
   {
     return false;
   }
 
-  memcpy(new_eth->h_dest, dst_mac, 6); // 2
+  memcpy(new_eth->h_dest, dst_mac, 6); // 3
   if (old_eth->h_dest + 6 > data_end)
   {
     return false;
   }
-  memcpy(new_eth->h_source, old_eth->h_dest, 6); // 3 
+  memcpy(new_eth->h_source, old_eth->h_dest, 6); // 4 
   new_eth->h_proto = BE_ETH_P_IP;
 
   create_v4_hdr(
@@ -281,17 +281,18 @@ After that it prepares the encapsulated packet:
     saddr,
     daddr,
     pkt_bytes,
-    IPPROTO_IPIP); // 4
+    IPPROTO_IPIP); // 5
 ```
 
-It:
+This simplified version:
 
-- Makes room for the header of the IPIP tunnel (1)
-- Sets the source mac address using the original destination one, the one of the interface (2)
-- Sets the destination mac address as the one provided by the parameters (the gateway one) (3)
-- Creates the IPIP header using the destination of the real as the destination IP
+- Reads the arguments passed from user space (1)
+- Makes room for the header of the IPIP tunnel (2)
+- Sets the source mac address using the original destination one, the one of the interface (3)
+- Sets the destination mac address as the one provided by the parameters (the gateway one) (4)
+- Creates the IPIP header using the destination of the real as the destination IP (5)
 
-## Testing it (for real)
+### Testing it (for real)
 
 The [repro subfolder](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample/repro) contains the setup I used
 to validate my ramblings were correct.
@@ -302,7 +303,7 @@ networks, setting the right routes in the various containers.
 The containers layout look a bit like:
 
 ```raw
-              10.111.220.0                     10.111.222.0/24
+              10.111.220.0/24                 10.111.222.0/24
 
 ┌──────────────────┐       ┌───────────────────┐        ┌───────────────────┐
 │                  │       │                   │        │                   │
@@ -327,32 +328,35 @@ The containers layout look a bit like:
                             └──────────────────┘
 ```
 
-Where the gateway container mimics the router, there are three different network segments:
+
+There are three different network segments:
 
 - client - gateway
 - katran - gateway
 - client - real
 
-On the `real` container we also setup an ipip interface as per the instructions on katran.
+To make things work, the `VIP` must be assigned to the loopback interface of the `real`, and an `IPIP` interface must be created:
 
-The setup files can be found in the [github repo](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample/repro/setup).
+```bash                        
+ip addr add 192.168.10.1 dev lo                                                                              
+ip link add name ipip0 type ipip external                                       
+ip link set up dev ipip0                                                        
+```
+
+All the setup files can be found in the [github repo](https://github.com/fedepaol/ebpfexamples/tree/main/xdpkatransample/repro/setup).
 
 Another thing to note is that the RP_FILTER parameter must be disabled on the local machine (running 
 `echo 0 > /proc/sys/net/ipv4/conf/all/rp_filter` should make the trick).
 
-## Profit!
+### Profit!
 
-Well, no. This is the reason why this second post took so long to be published. I spent endless nights trying to debug why it wasn't
-working. However, I think it's worth sharing some of the tools that I discovered in the process.
+It works, but it took me a bit. This is the reason why this second post took so long to be published. 
 
-### Let's start with TCPDump
+I wrote the program, prepared the setup, looked for the packets and... nothing. This dragged me in a rabbit hole from which I managed to come back, but since this post is already quite long I will skip this part and write about it in a new post.
 
-The swiss knife that saved me in multiple adventures is USELESS. If the packet is swallowed by XDP (as it happened to me), tcpdump won't
-show anything. In my case, I was seeing only the SYN packet going from the `gateway` to the `katran` container and disappearing.
+## Wrapping Up
 
-### XDPDump to the rescue
+XDP is very powerful (but also very low level!). It allow us to access to the raw bytes of the ethernet frame, and
+mess up with them in a very efficient way. 
 
-That's when I got to know [xdpdump](https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump). XDP dump is a bit like TCPDump, but it
-is able to inspect the packets going through (ingressing and egressing) an XDP program. So, by running
-
-xdpdump 
+Here I showed how Katran leverages XDP to do L4 load balancing, and how the very same setup can be replicated.
