@@ -1,15 +1,18 @@
 ---
-title: "Debugging XDP"
-date: 2023-09-06T23:26:17+02:00
-draft: true
+title: "XDP ate my packets, and how I debugged it"
+date: 2023-09-11T23:26:17+02:00
+description: This guide explores essential steps for debugging XDP (Express Data Path) issues. It covers strategies like using tcpdump for packet inspection, leveraging bpf_printk for parameter analysis, and employing tools like &#34;xdpdump&#34; and ethtool to diagnose and resolve common XDP problems. The guide emphasizes the importance of thorough debugging to uncover the root causes of XDP-related challenges.
+categories: ["Go", "ebpf", "networking"]
 ---
 
-# Overcoming issues with XDP
+# Debugging XDP
 
 This is a side post from my "learning eBPF from popular projects" initiative. Here I am going to describe the issues I had while trying to replicate
 locally an XDP based loadbalancer (see my [previous post]({{< ref "/posts/ebpf-journey-loadbalancing-with-katran" >}})).
 
-## What happened
+## It doesn't work!
+
+I strongly believe that the only thing that takes little to be done is something that already works and does not require any action. Even the most simple-looking thing might expand to take weeks because of unforeseen hurdles. And this was clearly one of those cases.
 
 Right after making the verifier gods happy, I started trying to replicate an environment I could test it in.
 
@@ -44,11 +47,9 @@ The setup was docker-compose based, and was _composed_ by multiple containers an
 So things were smooth, I was able to ping, the routes were in place, and I was ready to try the full
 workflow, using netcat on the client to reach the endpoint via the virtual IP.
 
-I spun up nc on both sides, tried to send a string, and... nothing. Which was kind of expected.
-After all, the program messes up with the raw packets, dealing with a lot of offset and low level fields.
+I then ran netcat on both sides, tried to send a string, and… nothing. Which was kind of expected. After all, the program messes up with the raw packets, dealing with a lot of offset and low level fields.
 
-The chance of getting it right in first instance were pretty low, so I took my old `tcpdump`
-friend out of my pocket and started debugging.
+The chance of getting it right in first instance were pretty low, so I took my old `tcpdump` friend out of my pocket and started debugging.
 
 ### The gateway was routing the syn packet to katran
 
@@ -62,15 +63,13 @@ friend out of my pocket and started debugging.
 
 I could see the packet coming from the client and going out to eth1 (the interface with the loadbalancer).
 
-And this was only the beginning.
-
 ## Running tcpdump on the loadbalancer container does not show anything
 
-Nothing, **dead silence**. Who stole my packets?
+Nothing, **dead silence**. This is odd, because the gateway tcpdump clearly show packets going through. Who stole my packets?
 
-I was not sure that the paramters I was passing to the program were correct. In fact, they weren't.
+## Logging logging logging!
 
-## Logging everywhere!
+The first thing I did was start with the basics, and use printf (or the eBPF equivalent) to make sure my program was receiving the right parameters.
 
 `bpf_printk` is the more convenient way to print something you can inspect from `/sys/kernel/debug/tracing/trace_pipe`.
 That allowed me to undersand in first instance that the VIP I was reading from eBPF was empty.
@@ -114,7 +113,8 @@ I was confident this would have made things work. But it did not.
 ### XDPDump to the rescue
 
 My Google fu brought me to [xdpdump](https://github.com/xdp-project/xdp-tools/tree/master/xdp-dump). XDP dump is a bit like TCPDump, but it
-is able to inspect the packets going through (ingressing and egressing) an XDP program. There is a nice blogpost about it [on the Red Hat blog](https://www.redhat.com/en/blog/capturing-network-traffic-express-data-path-xdp-environment). 
+is able to inspect the packets going through (ingressing and egressing) an XDP program. There is a nice blogpost about it [on the Red Hat blog](https://www.redhat.com/en/blog/capturing-network-traffic-express-data-path-xdp-environment).
+
 So, by running
 
 ```bash
@@ -146,7 +146,7 @@ This is when I started to sweat, because the packet looked fine, my program was 
 
 ## Down the rabbit hole
 
-After realizing there was nothing wrong with the packet itself, I stopped and tried a fresh start: how to debug XDP?
+After looking at the code upside down, staring at wireshark hoping to spot a mistake in the packet and eventually realizing the packet was fine, I I stopped and tried a fresh start: how to debug XDP?
 
 Googling around, I found that ethtool is able to show some statistics about XDP, and that is what I did:
 
@@ -196,15 +196,15 @@ Attaching 1 probe...
 @redir_errno[6]: 2
 ```
 
-So, now we know the error code is -6! Brilliant! But... where that -6 comes from?
+So, now we know **the error code value is -6**! Brilliant! But... where that -6 comes from?
 
-**It's time to look under the hood**: the tracepoint name is xdp_bulk_tx, which means that [somewhere in
+**It's time to look under the hood**: the tracepoint name is `xdp_bulk_tx`, which means that [somewhere in
 the kernel](https://github.com/torvalds/linux/blob/0bb80ecc33a8fb5a682236443c1e740d5c917d1d/drivers/net/veth.c#L567) there is a
 `trace_xdp_bulk_tx(rq->dev, sent, drops, err);` invocation that reports the error.
 
 In my case it was clear that the `-6` I was getting was related to `-ENXIO` (here)[https://github.com/torvalds/linux/blob/0bb80ecc33a8fb5a682236443c1e740d5c917d1d/drivers/net/veth.c#L486], which is doc-commented as `/* No such device or address */`. 
 
-I lack too much context in order to understand the particular scenario in which that error was returned, but [this comment](https://github.com/torvalds/linux/blob/0bb80ecc33a8fb5a682236443c1e740d5c917d1d/drivers/net/veth.c#L501) revealed itself to be another breadcrumb to the truth:
+I lack a lot of context in order to understand the particular scenario in which that error was returned, but [this comment](https://github.com/torvalds/linux/blob/0bb80ecc33a8fb5a682236443c1e740d5c917d1d/drivers/net/veth.c#L501) revealed itself to be another breadcrumb to the truth:
 
 ```C
 	/* The napi pointer is set if NAPI is enabled, which ensures that
@@ -225,12 +225,12 @@ of the veth pair, and I did not have any way to set that because the other end w
 
 ## How I made it work
 
-Given the issue was related mainly to the native veth implementation, what I did was just to replace the veth based bridge network with Macvlan based one, and it worked!
+After spending so much time after this issue, being near to giving up multiple times, I wanted to see it work. So the quick and easy solution was to replace the veth based bridge network with Macvlan based one, and it worked!
 
 ## Wrapping Up
 
 I hope this will serve as an example of what tools are available to triage the obscure errors we can incur into when dealing with eBPF,
 which sometimes are different from the workflow we (as regular kernel users) are used to follow.
 
-Here I had to use eBPF to debug eBPF (via some tools like `bpftrace` and `xdpdump`) and eventually roll up my sleeves and dig into
+This I had to use eBPF to debug eBPF (via some tools like `bpftrace` and `xdpdump`) and eventually roll up my sleeves and dig into
 the kernel sources to understand what that misterious error code I was getting was about.

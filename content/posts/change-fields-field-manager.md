@@ -1,5 +1,4 @@
 +++ 
-draft = true
 date = 2023-08-24T21:45:30+02:00
 title = "Managing Kubernetes Resources with Controller Runtime's Field Manager"
 description = "Explore the nuances of managing Kubernetes resources using the powerful 'controller-runtime' framework. Learn how to leverage the field manager concept to streamline updates and avoid synchronization issues."
