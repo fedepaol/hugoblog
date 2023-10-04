@@ -2,12 +2,11 @@
 draft = false
 date = 2023-09-24T14:59:22+02:00
 title = "eBPF journey by examples: perf events with Pyroscope"
-description = "Here we dig into pyroscope to understand how eBPF can fetch perf events and build indicators
-of how the application is behaving, providing a nice backend for flamegraphs."
+description = "Here we dig into pyroscope to understand how eBPF can fetch perf events and build indicators of how the application is behaving, providing a nice backend for flamegraphs."
 slug = ""
 authors = []
 tags = []
-categories: ["Go", "ebpf", "performance"]
+categorie = ["Go", "ebpf", "performance"]
 externalLink = ""
 series = []
 +++
