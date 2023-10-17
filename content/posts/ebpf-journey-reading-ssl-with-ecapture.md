@@ -1,7 +1,7 @@
-+++ 
++++
 draft = false
 date = 2023-10-13T15:41:18+02:00
-title = "eBPF journey by examples: hijacking SSL with ebpf with eCapture"
+title = "eBPF journey by examples: hijacking SSL with eBPF with eCapture"
 description = "a post about how ecapture leverages eBPF uprobes and uretprobes in a very creative way, by intercepting and showing openssl traffic in clear"
 slug = ""
 authors = []
@@ -307,8 +307,8 @@ The pid to filter is taken from a map (of type ARRAY), and we only save the buff
 SEC("uretprobe/SSL_write")
 int probe_ret_SSL_write(struct pt_regs *ctx)
 {
-    /** 
-    filter by pid 
+    /**
+    filter by pid
     **/
     struct active_ssl_buf *active_ssl_buf_t =
         bpf_map_lookup_elem(&active_ssl_write_args_map, &current_pid_tgid);
