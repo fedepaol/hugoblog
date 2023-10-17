@@ -6,7 +6,7 @@ description = "Here we dig into pyroscope to understand how eBPF can fetch perf 
 slug = ""
 authors = []
 tags = []
-categorie = ["Go", "ebpf", "performance"]
+categories = ["Go", "ebpf", "performance"]
 externalLink = ""
 series = []
 +++
