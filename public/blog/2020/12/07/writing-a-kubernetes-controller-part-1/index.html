@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>
+  Writing a Kubernetes Controller: part 1 · My little software warehouse
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="Federico Paolinelli">
+<meta name="description" content="Even when knowing Go, writing a Kubernetes controller is intimidating.
+In this post, I&rsquo;ll introduce the Kubernetes operating model, how objects are mapped and what are the tools provided by the go-client framework to write bullet proof controllers. In a following post I will explain how to put all the pieces together and how to define and consume custom types.
+I will describe the core components like:
+ClientSets Informers Work Queues (and RateLimiting Work Queues) and how they fit together in writing a Kubernetes controller.">
+<meta name="keywords" content="">
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Writing a Kubernetes Controller: part 1"/>
+<meta name="twitter:description" content="Even when knowing Go, writing a Kubernetes controller is intimidating.
+In this post, I&rsquo;ll introduce the Kubernetes operating model, how objects are mapped and what are the tools provided by the go-client framework to write bullet proof controllers. In a following post I will explain how to put all the pieces together and how to define and consume custom types.
+I will describe the core components like:
+ClientSets Informers Work Queues (and RateLimiting Work Queues) and how they fit together in writing a Kubernetes controller."/>
+
+<meta property="og:title" content="Writing a Kubernetes Controller: part 1" />
+<meta property="og:description" content="Even when knowing Go, writing a Kubernetes controller is intimidating.
+In this post, I&rsquo;ll introduce the Kubernetes operating model, how objects are mapped and what are the tools provided by the go-client framework to write bullet proof controllers. In a following post I will explain how to put all the pieces together and how to define and consume custom types.
+I will describe the core components like:
+ClientSets Informers Work Queues (and RateLimiting Work Queues) and how they fit together in writing a Kubernetes controller." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://fedepaol.github.io/blog/2020/12/07/writing-a-kubernetes-controller-part-1/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-12-07T23:01:51+01:00" />
+<meta property="article:modified_time" content="2020-12-07T23:01:51+01:00" />
+
+
+
+
+<link rel="canonical" href="https://fedepaol.github.io/blog/2020/12/07/writing-a-kubernetes-controller-part-1/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.min.577e3c5ead537873430da16f0964b754a120fd87c4e2203a00686e7c75b51378.css" integrity="sha256-V348Xq1TeHNDDaFvCWS3VKEg/YfE4iA6AGhufHW1E3g=" crossorigin="anonymous" media="screen" />
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+<body class="preload-transitions colorscheme-light">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="https://fedepaol.github.io/">
+      My little software warehouse
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/about/">About</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="mailto:fedepaol@gmail.com">Contact</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="https://fedepaol.github.io/blog/2020/12/07/writing-a-kubernetes-controller-part-1/">
+              Writing a Kubernetes Controller: part 1
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2020-12-07T23:01:51&#43;01:00">
+                December 7, 2020
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              10-minute read
+            </span>
+          </div>
+          
+          
+          
+        </div>
+      </header>
+
+      <div class="post-content">
+        
+        <p>Even when knowing Go, writing a <strong>Kubernetes controller</strong> is intimidating.</p>
+<p>In this post, I&rsquo;ll introduce the Kubernetes operating model, how objects are mapped and what are the tools provided by the go-client framework to write bullet proof controllers. In a following post I will explain how to put all the pieces together and how to define and consume custom types.</p>
+<p>I will describe the core components like:</p>
+<ul>
+<li>ClientSets</li>
+<li>Informers</li>
+<li>Work Queues (and RateLimiting Work Queues)</li>
+</ul>
+<p>and how they fit together in writing a Kubernetes controller.</p>
+<p>The content of this post is inspired by the <em>&ldquo;It&rsquo;s all about reconciliation, anatomy of a kubernetes controller&rdquo;</em> talk I gave this summer as part of the <a href="https://goway.io/"  class="external-link" target="_blank" rel="noopener">GoWay conference</a>.</p>
+<p>The slides are available here:</p>
+<!-- raw HTML omitted -->
+<h1 id="the-kubernetes-model">
+  The Kubernetes Model
+  <a class="heading-link" href="#the-kubernetes-model">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h1>
+<p>The kubernetes model is declarative and not imperative. This means that instead of asking a kubernetes cluster to execute actions, we declare the state we want it to be in, and we wait for it to reconcile our request and to reach that state.</p>
+<p>In the following (abused) example of <code>ReplicaSet</code>, we ask the cluster to deploy 3 replicas of a given pod:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">	</span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ReplicaSet</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">frontend</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	      </span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l">frontend</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nt">tier</span><span class="p">:</span><span class="w"> </span><span class="l">frontend</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">php-redis</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">gcr.io/google_samples/gb-frontend:v3</span><span class="w">
+</span></span></span></code></pre></div><p>When we change our mind, and we set the number of replicas to 2, we are not sending a command to the cluster asking to remove a pod, we are declaring the new state we want the cluster to be in. <strong>This makes a substantial difference and is the key in understanding how Kubernetes works</strong>.</p>
+<p>The representation of the state is stored in a key-value storage shared among all the components that make a Kubernetes cluster. Those components in charge of reading the desired state and reconciling it are commonly referred to as <strong>controllers</strong>.</p>
+<p><img src="/images/reconciliation/equilibrium.png" alt=""></p>
+<p>For this reason, a cluster can be seen as a <em>dynamic system</em>, where the equilibrium is disturbed by event, that can be handled by controllers, generating other events handled by other controllers, up to a new state of equilibrium (this is probably also one of the few chances where I can use a graph :P).</p>
+<h2 id="complications">
+  Complications
+  <a class="heading-link" href="#complications">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<h3 id="race-conditions">
+  Race conditions
+  <a class="heading-link" href="#race-conditions">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>As a consequence of having several (distributed) components interacting with the storage (commonly implemented using etcd), two different controllers may write the same data.</p>
+<p>The way Kubernetes handles it is via <strong>optimistic concurrency</strong>, which basically means &ldquo;the first writer wins, the second gets an error&rdquo;, which is different from the locking mechanisms we are used to in &ldquo;regular&rdquo; databases.</p>
+<p>It also means that <strong>the overhead of handling the error and possibly retrying is pushed back to us</strong>, writing those controllers.</p>
+<p>(Note that this works because the number of writes is way less than the number of reads).</p>
+<h3 id="missed-events">
+  Missed events
+  <a class="heading-link" href="#missed-events">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>This is the norm, for many reasons.</p>
+<ul>
+<li>Pods can die (or get rescheduled)</li>
+<li>The network is not reliable</li>
+<li>Nodes can die</li>
+</ul>
+<h2 id="level-driven-vs-edge-driven">
+  Level Driven vs Edge Driven
+  <a class="heading-link" href="#level-driven-vs-edge-driven">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>There are two ways to handle events. Let&rsquo;s consider the example of the variations of a replica set.</p>
+<p><img src="/images/reconciliation/edgeorlevel.png" alt=""></p>
+<p>The terminology comes from electronics. You can listen to changes happening at the <em>edges</em>, considering the variation of the number of pods, going from 1 to 0 for example, or you can listen to the <em>level</em>, the value that is constantly requested at any given point in time.</p>
+<h3 id="edge-driven">
+  Edge Driven
+  <a class="heading-link" href="#edge-driven">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>When listening to the variations happening on the edges, the behaviour is driven by the variation of the data observed at the edges.</p>
+<p><img src="/images/reconciliation/edgedriven.png" alt=""></p>
+<p>Apparently, this is easier to implement. When the number of replicas grows by one, we simply spin up a new pod. But is this equally robust?</p>
+<p>What happens if the controller implementing this behaviour gets killed before handling the 1 -&gt; 0 variation? We would end up creating 3 pods, while the user requested for 2.</p>
+<h3 id="level-driven">
+  Level Driven
+  <a class="heading-link" href="#level-driven">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>With level driven, we constantly monitor the level, reconciling the desired number of pods with the one expressed by the level.</p>
+<p><img src="/images/reconciliation/leveldriven.png" alt=""></p>
+<p>This requires more logic, but <strong>it is definitely more robust</strong>. The controller needs to observe not only the requested value, but also the state of the cluster, and react accordingly.</p>
+<p>It&rsquo;s like constantly polling the requested state and the actual state, and applying an idempotent logic.</p>
+<h3 id="edge-triggered-level-driven">
+  Edge Triggered, level driven
+  <a class="heading-link" href="#edge-triggered-level-driven">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p><strong>This</strong> is the way to go. The waking points are the variations (or, the first variation in case our controller is just spinning up), but the logic is implemented <strong>only looking at the requested state</strong>. <strong>If we handle the current state but ignore the old one, we can afford missing events</strong>.</p>
+<h1 id="writing-a-controller-in-go">
+  Writing a controller in Go
+  <a class="heading-link" href="#writing-a-controller-in-go">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h1>
+<p>There is no black magic, and the controller working principle is pretty simple: read / write data to the key value store, and react accordingly.</p>
+<h2 id="you-deal-with-types">
+  You deal with types
+  <a class="heading-link" href="#you-deal-with-types">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>A kubernetes type is identified by it&rsquo;s rest url:</p>
+<pre tabindex="0"><code>   /apis/batch/v1/namespaces/FOO/jobs
+</code></pre><p>The path segments represent the various components of a type:</p>
+<ul>
+<li>Group</li>
+<li>Version</li>
+<li>Resource</li>
+</ul>
+<p>The type of the object returned by the rest url is referred to as <code>kind</code>.</p>
+<p>In kubernetes there are many kinds, related to different resources you handle when interacting with a Kubernetes cluster, such as pods, services, etc.</p>
+<h2 id="all-kinds-share-common-traits">
+  All kinds share common traits
+  <a class="heading-link" href="#all-kinds-share-common-traits">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>This below is the go struct for a Pod.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="kd">type</span> <span class="nx">Pod</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">metav1</span><span class="p">.</span><span class="nx">TypeMeta</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">metav1</span><span class="p">.</span><span class="nx">ObjectMeta</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">Spec</span>   <span class="nx">PodSpec</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">Status</span> <span class="nx">PodStatus</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p>In the Kubernetes Go API there is an intensive use of struct embedding (one of my favourite features of Go).</p>
+<p>All the objects embed <code>TypeMeta</code> and <code>ObjectMeta</code>.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="kd">type</span> <span class="nx">TypeMeta</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">Kind</span>       <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">APIVersion</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p><code>TypeMeta</code> contains information related to the specific type.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">ObjectMeta</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Name</span>               <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">GenerateName</span>       <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Namespace</span>          <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">SelfLink</span>           <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">UID</span>                <span class="nx">types</span><span class="p">.</span><span class="nx">UID</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">ResourceVersion</span>    <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Generation</span>         <span class="kt">int64</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span>
+</span></span></code></pre></div><p><code>ObjectMeta</code> contains information that is common to all the objects handled by the Kubernetes API.</p>
+<h3 id="spec-and-status">
+  Spec and Status
+  <a class="heading-link" href="#spec-and-status">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p><code>spec</code> and <code>status</code> are a convention followed by all the kubernetes objects. They are type specific, and the idea behind them is pretty simple: <code>spec</code> represents the desired state set by the user, <code>status</code> represents the status observed by the controller and reported back to the user.</p>
+<p><img src="/images/reconciliation/specstatus.png" alt=""></p>
+<h2 id="to-sum-up">
+  To Sum Up
+  <a class="heading-link" href="#to-sum-up">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>A controller job is to read what the user wants (the <code>spec</code>), apply it and report the <code>status</code> back.</p>
+<p>Depending on the controller, applying the spec may result in changing specs of other types (such as the replicaset vs pods example) or interacting with something external to the cluster (such as the underlying baremetal configuration). Ideally, the spec is reconciled, the status reaches the desired one and is reported back to the user.</p>
+<h2 id="theres-no-such-thing-as-a-go-client">
+  There&rsquo;s no such thing as a &ldquo;Go Client&rdquo;
+  <a class="heading-link" href="#theres-no-such-thing-as-a-go-client">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>When I approached kubernetes for the first time, I thought there was an universal go library to handle all the types.</p>
+<p>The truth is, <a href="https://github.com/kubernetes/client-go"  class="external-link" target="_blank" rel="noopener">client-go</a> is more like a framework: there is a client for each api group, for example:</p>
+<ul>
+<li>the client used to handle pods is the one related to the <code>core</code> group</li>
+<li>the client used to handle daemonsets is the one related to the <code>app</code> group</li>
+<li>the client used to handle networkpolicies is the one related to the <code>networking</code> group</li>
+</ul>
+<p>All these clients are grouped together in a <code>clientset</code>.</p>
+<h2 id="how-do-we-get-a-pod">
+  How do we get a pod?
+  <a class="heading-link" href="#how-do-we-get-a-pod">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>The starting point is to retrieve the cluster configuration. One common way to do that is to read the <code>kubeconfig</code> file, but there are alternatives (especially if the controller runs inside a cluster).</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="nx">config</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">clientcmd</span><span class="p">.</span><span class="nf">BuildConfigFromFlags</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;/home/fede/kubeconfig&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">clientset</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">kubernetes</span><span class="p">.</span><span class="nf">NewForConfig</span><span class="p">(</span><span class="nx">config</span><span class="p">)</span>
+</span></span></code></pre></div><p>Once we have the <code>clientset</code>, we can perform operations on collections of objects (such as <code>List</code>) or on specific instances (such as <code>Get</code>):</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="nx">pods</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">clientset</span><span class="p">.</span><span class="nf">CoreV1</span><span class="p">().</span><span class="nf">Pods</span><span class="p">(</span><span class="s">&#34;testnamespace&#34;</span><span class="p">).</span><span class="nf">List</span><span class="p">(</span><span class="nx">v1</span><span class="p">.</span><span class="nx">ListOptions</span><span class="p">{})</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ds</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">clientset</span><span class="p">.</span><span class="nf">AppsV1</span><span class="p">().</span><span class="nf">DaemonSet</span><span class="p">(</span><span class="s">&#34;testnamespace&#34;</span><span class="p">).</span><span class="nf">Get</span><span class="p">(</span><span class="s">&#34;myset&#34;</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">GetOptions</span><span class="p">{})</span>
+</span></span></code></pre></div><p>The available verbs are the ones expected from a CRUD client: Get, Create, Delete, Update, List, Patch, Watch.</p>
+<h3 id="watch-is-special">
+  Watch is special
+  <a class="heading-link" href="#watch-is-special">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>The <code>Watch</code> method is the key for handling the event driven behaviour of our controllers.</p>
+<p>Watch returns a <code>Watcher</code> interface, from where we can get a channel that gets notified of incoming events:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="kd">type</span> <span class="nx">Interface</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">Stop</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">ResultChan</span><span class="p">()</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">Event</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kd">type</span> <span class="nx">Event</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">Type</span> <span class="nx">EventType</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">Object</span> <span class="nx">runtime</span><span class="p">.</span><span class="nx">Object</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p>This is pretty low level, and the controller is left implementing the error handling mechanism, for example in case of lost connection with the apiserver.</p>
+<h3 id="informers">
+  Informers
+  <a class="heading-link" href="#informers">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p><code>Informers</code> are a higher level construct that relies on <code>Watcher</code>s to implement the event handling.</p>
+<p><img src="/images/reconciliation/informers.png" alt=""></p>
+<p>They differ because:</p>
+<ul>
+<li>They implement a local cache of the data observed, that can be accessed via the <code>Lister</code> interface</li>
+<li>They notify the consumer via a Handler</li>
+<li>They handle error situations such as reconnections</li>
+</ul>
+<h3 id="shared-informers">
+  Shared Informers
+  <a class="heading-link" href="#shared-informers">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>The specific type of informers that is recommended to use are <code>SharedInformers</code>.</p>
+<p>The main difference is related to the impacts of the subscription on the api server. Even if multiple subscriptions are started (inside the same process), the <code>SharedInformer</code> makes sure that only one subscription is opened on the ApiServer, without adding extra overhead.</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="kn">import</span> <span class="nx">kubeinformers</span> <span class="s">&#34;k8s.io/client-go/informers&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// create the informer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">kubeInformerFactory</span> <span class="o">:=</span> <span class="nx">kubeinformers</span><span class="p">.</span><span class="nf">NewSharedInformerFactory</span><span class="p">(</span><span class="nx">kubeClient</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="o">*</span><span class="mi">30</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">podsInformer</span> <span class="o">:=</span> <span class="nx">kubeInformerFactory</span><span class="p">.</span><span class="nf">Core</span><span class="p">().</span><span class="nf">V1</span><span class="p">().</span><span class="nf">Pods</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// register the listeners
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">podsInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">AddEventHandler</span><span class="p">(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">ResourceEventHandlerFuncs</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">AddFunc</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">obj</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">		<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// access the local cache
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">podsInformer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">Lister</span><span class="p">().</span><span class="nf">Pods</span><span class="p">(</span><span class="s">&#34;namespace&#34;</span><span class="p">).</span><span class="nf">Get</span><span class="p">(</span><span class="s">&#34;podname&#34;</span><span class="p">)</span>
+</span></span></code></pre></div><p>The informers are type specific, and when reading the data through the <code>Lister</code> we are not hitting the remote endpoint, but relying on a local copy of the object, stored in the cache of the informer.</p>
+<p><strong>Note:</strong> The objects provided by the informer are <strong>owned</strong> by the informer. Since multiple clients may be registered against the same informer, modifying the object may have unpredictable results. Because of this, when needed it is common practice to create a local copy using the <code>DeepCopy</code> method available on those objects.</p>
+<h3 id="work-queues">
+  Work Queues
+  <a class="heading-link" href="#work-queues">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Work queues are the final piece of the puzzle.</p>
+<p>The go-client framework provides a priority queue that fits particularly well in the kubernetes patterns.</p>
+<p>They allow multiple consumers for the same source of events, and decouple the callbacks (which are supposed to be quick) from the consumption of the events.</p>
+<p>The interface of a work queue looks like:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="kd">type</span> <span class="nx">Interface</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">Add</span><span class="p">(</span><span class="nx">item</span> <span class="kd">interface</span><span class="p">{})</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">Len</span><span class="p">()</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">Get</span><span class="p">()</span> <span class="p">(</span><span class="nx">item</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">shutdown</span> <span class="kt">bool</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">Done</span><span class="p">(</span><span class="nx">item</span> <span class="kd">interface</span><span class="p">{})</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">ShutDown</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">ShuttingDown</span><span class="p">()</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p><img src="/images/reconciliation/workqueue.png" alt=""></p>
+<p>The safer and recommended way to use the queue is <strong>to put only the key of the event in the queue</strong>. On the other end of the queue the consumer can retrieve the last image from the informer&rsquo;s cache, using the <code>lister</code> (remember, edge triggered but level driven?).</p>
+<p>This means that all the variations of a given key are squashed until a consumer handles the key.</p>
+<p>A positive side effect of this implementation is also that it is impossible to have two consumers handling events related to the same key at the same time (and thus, we can&rsquo;t have deletion handled before creation, for example).</p>
+<p>What if a new event is added when a consumer is consuming the same key?</p>
+<p>This is the reason for having the <code>Done</code> method. The consumer is expected to mark the key as done when it finishes handling it, so the queue can re-submit the key.</p>
+<h3 id="rate-limiting-work-queues">
+  Rate Limiting Work Queues
+  <a class="heading-link" href="#rate-limiting-work-queues">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>A special type of queues is the rate limiting ones.</p>
+<p>The main difference with WorkQueues, is the possibility of putting the event back to the queue in case a recoverable error happens.</p>
+<p>The interface looks like</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="kd">func</span> <span class="nf">NewRateLimitingQueue</span><span class="p">(</span><span class="nx">rateLimiter</span> <span class="nx">RateLimiter</span><span class="p">)</span> <span class="nx">RateLimitingInterface</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kd">type</span> <span class="nx">RateLimitingInterface</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="nx">DelayingInterface</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">AddRateLimited</span><span class="p">(</span><span class="nx">item</span> <span class="kd">interface</span><span class="p">{})</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">Forget</span><span class="p">(</span><span class="nx">item</span> <span class="kd">interface</span><span class="p">{})</span>
+</span></span><span class="line"><span class="cl">	    <span class="nf">NumRequeues</span><span class="p">(</span><span class="nx">item</span> <span class="kd">interface</span><span class="p">{})</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p>As we already discussed, in this type of applications recoverable errors are normal (just think about the optimistic concurrency scenario). Having a well defined and robust way to perform retries is necessary.</p>
+<p><img src="/images/reconciliation/ratelimiting.png" alt=""></p>
+<p>With Rate Limiting work queues, the consumer can throw the event back to the queue calling <code>AddRateLimited</code>, and the queue will re-propose the item following the rate limiting logic implemented by the queue (default ones follow an exponential backoff mechanism).</p>
+<p>The <code>Forget</code> method is how we notify the queue the item was processed successfully and it can stop sending it to the consumer.</p>
+<p>Implementing this type of behaviour requires extra logic in place (idempotency among the others) to make sure the event is reconciled properly.</p>
+<p>In the next post, I will cover how the code looks like, how we can implement the same mechanisms for user defined types, and how to use the non type-safe client.</p>
+<p>If you liked this post, <a href="https://twitter.com/fedepaol"  class="external-link" target="_blank" rel="noopener">consider following me on twitter</a>.</p>
+
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "fedepaolgithubio" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+    2024
+     Federico Paolinelli 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js" integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+  
+
+  
+
+  
+
+
+  
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-16514009-2', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

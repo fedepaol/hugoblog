@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>
+  Writing a Kubernetes Controller: part 2 · My little software warehouse
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="Federico Paolinelli">
+<meta name="description" content="This is the second part of my &ldquo;writing a kubernetes controller&rdquo; blogpost.
+Here, I will explain how to put what was explained int the first part in go code.
+Setting the informer and the workqueue Link to heading This is the first step, where you listen for events and send them to the consumers via the workqueue:
+kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30) informer := kubeInformerFactory.Core().V1().Pods() informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{ AddFunc: func(obj interface{}) { pod := obj.">
+<meta name="keywords" content="">
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Writing a Kubernetes Controller: part 2"/>
+<meta name="twitter:description" content="This is the second part of my &ldquo;writing a kubernetes controller&rdquo; blogpost.
+Here, I will explain how to put what was explained int the first part in go code.
+Setting the informer and the workqueue Link to heading This is the first step, where you listen for events and send them to the consumers via the workqueue:
+kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30) informer := kubeInformerFactory.Core().V1().Pods() informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{ AddFunc: func(obj interface{}) { pod := obj."/>
+
+<meta property="og:title" content="Writing a Kubernetes Controller: part 2" />
+<meta property="og:description" content="This is the second part of my &ldquo;writing a kubernetes controller&rdquo; blogpost.
+Here, I will explain how to put what was explained int the first part in go code.
+Setting the informer and the workqueue Link to heading This is the first step, where you listen for events and send them to the consumers via the workqueue:
+kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30) informer := kubeInformerFactory.Core().V1().Pods() informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{ AddFunc: func(obj interface{}) { pod := obj." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://fedepaol.github.io/blog/2021/01/07/writing-a-kubernetes-controller-part-2/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-01-07T23:01:51+01:00" />
+<meta property="article:modified_time" content="2021-01-07T23:01:51+01:00" />
+
+
+
+
+<link rel="canonical" href="https://fedepaol.github.io/blog/2021/01/07/writing-a-kubernetes-controller-part-2/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.min.577e3c5ead537873430da16f0964b754a120fd87c4e2203a00686e7c75b51378.css" integrity="sha256-V348Xq1TeHNDDaFvCWS3VKEg/YfE4iA6AGhufHW1E3g=" crossorigin="anonymous" media="screen" />
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+<body class="preload-transitions colorscheme-light">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="https://fedepaol.github.io/">
+      My little software warehouse
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/about/">About</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="mailto:fedepaol@gmail.com">Contact</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="https://fedepaol.github.io/blog/2021/01/07/writing-a-kubernetes-controller-part-2/">
+              Writing a Kubernetes Controller: part 2
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2021-01-07T23:01:51&#43;01:00">
+                January 7, 2021
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              4-minute read
+            </span>
+          </div>
+          
+          
+          
+        </div>
+      </header>
+
+      <div class="post-content">
+        
+        <p>This is the second part of my &ldquo;writing a kubernetes controller&rdquo; blogpost.</p>
+<p>Here, I will explain how to put what was explained <a href="https://fedepaol.github.io/blog/2020/12/07/writing-a-kubernetes-controller-part-1/" title="first post" >int the first part</a> in go code.</p>
+<h2 id="setting-the-informer-and-the-workqueue">
+  Setting the informer and the workqueue
+  <a class="heading-link" href="#setting-the-informer-and-the-workqueue">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>This is the first step, where you listen for events and send them to the consumers via the workqueue:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="nx">kubeInformerFactory</span> <span class="o">:=</span> <span class="nx">kubeinformers</span><span class="p">.</span><span class="nf">NewSharedInformerFactory</span><span class="p">(</span><span class="nx">kubeClient</span><span class="p">,</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="o">*</span><span class="mi">30</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">informer</span> <span class="o">:=</span> <span class="nx">kubeInformerFactory</span><span class="p">.</span><span class="nf">Core</span><span class="p">().</span><span class="nf">V1</span><span class="p">().</span><span class="nf">Pods</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">informer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nf">AddEventHandler</span><span class="p">(</span><span class="nx">cache</span><span class="p">.</span><span class="nx">ResourceEventHandlerFuncs</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">AddFunc</span><span class="p">:</span> <span class="kd">func</span><span class="p">(</span><span class="nx">obj</span> <span class="kd">interface</span><span class="p">{})</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		    <span class="nx">pod</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		    <span class="nx">key</span><span class="p">,</span> <span class="nx">_</span> <span class="p">=</span> <span class="nx">cache</span><span class="p">.</span><span class="nf">MetaNamespaceKeyFunc</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		    <span class="nx">workqueue</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span></code></pre></div><p>One important thing to note is the fact that we extract the key of the object we received (using <code>cache.MetaNamespaceKeyFunc</code>) and we put it into the queue.</p>
+<p>This is because we want to handle the fresh-est image when the event reaches the worker (remember edge triggered / level driven from <a href="https://fedepaol.github.io/blog/2020/12/07/writing-a-kubernetes-controller-part-1/" title="first post" >part 1</a>?).</p>
+<p>Another important thing to take into account is that we want to make sure that we are spinning all the consumers only when the cache of the informer is full and well aligned. This, again, is because the cache plays an important role in consuming the data on the worker side.</p>
+<p>To ensure that, what we need to do is:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="nx">cache</span><span class="p">.</span><span class="nf">WaitForCacheSync</span><span class="p">(</span><span class="nx">stopCh</span><span class="p">,</span> <span class="nx">informer</span><span class="p">.</span><span class="nf">Informer</span><span class="p">().</span><span class="nx">HasSynced</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// spin up workers
+</span></span></span></code></pre></div><h2 id="on-the-worker-side">
+  On the worker side
+  <a class="heading-link" href="#on-the-worker-side">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="nx">obj</span><span class="p">,</span> <span class="nx">shutdown</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">workqueue</span><span class="p">.</span><span class="nf">Get</span><span class="p">()</span> <span class="c1">// 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">shutdown</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	    <span class="k">return</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> 	<span class="k">defer</span> <span class="nx">workqueue</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="c1">// 2
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.(</span><span class="kt">string</span><span class="p">);</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span> <span class="c1">// 3
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	    <span class="c1">// should never happen
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">handle</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span> <span class="p">(</span><span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nf">isRecoverable</span><span class="p">(</span><span class="nx">err</span><span class="p">))</span> <span class="p">{</span> <span class="c1">// 4
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	    <span class="nx">workqueue</span><span class="p">.</span><span class="nf">AddRateLimited</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="c1">// 5
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="err">“</span><span class="nx">Help</span><span class="err">”</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nx">c</span><span class="p">.</span><span class="nx">workqueue</span><span class="p">.</span><span class="nf">Forget</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="c1">// 6
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">return</span> <span class="kc">nil</span>
+</span></span></code></pre></div><p>Here&rsquo;s what we do:</p>
+<ul>
+<li>we fetch the object from the queue (1)</li>
+<li>we tell the queue when we are done handling the event  (2)</li>
+<li>we convert the event to a string (the key of the event) (3)</li>
+<li>we handle it (4)</li>
+<li>if a recoverable error happens, we add the event back to the queue (5)</li>
+<li>if everything goes fine, we tell the queue to forget about the item (6)</li>
+</ul>
+<p>This is strongly influenced by the behaviour of the ratelimiting workqueue.</p>
+<p>When we put a key into the queue, any other addition of the key to the queue will override the current one. This means, only one instance of the same key can be in the queue at the same time. The only caveat is, a key is inserted when a worker is handling the same key. This is the exact reason why we need to call <code>workqueue.Done</code>. Only after that, the key will be re-queued and available for being handled.</p>
+<p>Another couple of calls are related to the retry mechanism. We said that in the kubernetes world failures are normal and we must have a consistent way to retry, and that&rsquo;s what <code>workqueue.AddRateLimited</code> does. Basically, the key is sent back to the queue and re-submitted after the retry policy implemented by the queue (the default one is a variation of exponential backoff).</p>
+<p>In this way, our reconciliation loop will receive the key again, and it will hopefully be able to handle it without failures.</p>
+<p>This has two big implications:</p>
+<ul>
+<li>our reconciliation loop should not do any active form of retry. It should just send the event back to the queue and wait for it to come again.</li>
+<li>it&rsquo;s up to the business logic to choose what errors are recoverable and what not. Adding a non recoverable error to the queue (i.e. one event that will always fail) will result in a continuous reconciliation loop (even though, with the backoff policy).</li>
+</ul>
+<p>Finally, if we handle the key successfully, we call <code>Forget</code> and the queue will forget about the item.</p>
+<p>When we handle the key, we need to retrieve the full object from the cache:</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="nx">ns</span><span class="p">,</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">cache</span><span class="p">.</span><span class="nf">SplitMetaNamespaceKey</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pod</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">informer</span><span class="p">.</span><span class="nf">Lister</span><span class="p">().</span><span class="nf">Pods</span><span class="p">(</span><span class="nx">namespace</span><span class="p">).</span><span class="nf">Get</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="err">…</span><span class="p">.</span>
+</span></span></code></pre></div><p>Please note here <strong>that the pod we are fetching from the cache may be more recent than the image that triggered the event</strong>.</p>
+<p>// todo put a drawing here</p>
+<p>This happens in a scenario where the consumer is slow (or busy consuming other events) while the same pod object has a lot of variations in the meanwhile.</p>
+<p>From the queue perspective, the one and only key is in flight, and the image is updated in the cache. When the key finally reaches the consumer, the consumer (a goroutine) fetches the freshest image from the cache.</p>
+<p><img src="/images/reconciliation/ratelimiting.png" alt=""></p>
+<h1 id="using-custom-types">
+  Using custom types
+  <a class="heading-link" href="#using-custom-types">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h1>
+
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "fedepaolgithubio" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+    2024
+     Federico Paolinelli 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js" integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+  
+
+  
+
+  
+
+
+  
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-16514009-2', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

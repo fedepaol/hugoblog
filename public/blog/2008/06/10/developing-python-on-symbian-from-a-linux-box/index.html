@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>
+  Developing python on symbian from a linux box · My little software warehouse
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="Federico Paolinelli">
+<meta name="description" content="Since my mobile device is a s60v3 one (Nokia E61), I found particulary difficult to develop any simple python script on the phone. The hardest thing to do was the write - test cycle.
+On linux you can&#39;t simply send the file to the phone with obex, since it will be stored in your incoming messages.
+From the excellent Jürgen Scheible&#39;s tutorial website I discovered the existance of the nice putools for making easier the development cycle here">
+<meta name="keywords" content="">
+
+<meta name="twitter:card" content="summary"/><meta name="twitter:title" content="Developing python on symbian from a linux box"/>
+<meta name="twitter:description" content="Since my mobile device is a s60v3 one (Nokia E61), I found particulary difficult to develop any simple python script on the phone. The hardest thing to do was the write - test cycle.
+On linux you can&#39;t simply send the file to the phone with obex, since it will be stored in your incoming messages.
+From the excellent Jürgen Scheible&#39;s tutorial website I discovered the existance of the nice putools for making easier the development cycle here"/>
+
+<meta property="og:title" content="Developing python on symbian from a linux box" />
+<meta property="og:description" content="Since my mobile device is a s60v3 one (Nokia E61), I found particulary difficult to develop any simple python script on the phone. The hardest thing to do was the write - test cycle.
+On linux you can&#39;t simply send the file to the phone with obex, since it will be stored in your incoming messages.
+From the excellent Jürgen Scheible&#39;s tutorial website I discovered the existance of the nice putools for making easier the development cycle here" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://fedepaol.github.io/blog/2008/06/10/developing-python-on-symbian-from-a-linux-box/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2008-06-10T00:00:00+00:00" />
+<meta property="article:modified_time" content="2008-06-10T00:00:00+00:00" />
+
+
+
+
+<link rel="canonical" href="https://fedepaol.github.io/blog/2008/06/10/developing-python-on-symbian-from-a-linux-box/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.min.577e3c5ead537873430da16f0964b754a120fd87c4e2203a00686e7c75b51378.css" integrity="sha256-V348Xq1TeHNDDaFvCWS3VKEg/YfE4iA6AGhufHW1E3g=" crossorigin="anonymous" media="screen" />
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+<body class="preload-transitions colorscheme-light">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="https://fedepaol.github.io/">
+      My little software warehouse
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/about/">About</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="mailto:fedepaol@gmail.com">Contact</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="https://fedepaol.github.io/blog/2008/06/10/developing-python-on-symbian-from-a-linux-box/">
+              Developing python on symbian from a linux box
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2008-06-10T00:00:00Z">
+                June 10, 2008
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              2-minute read
+            </span>
+          </div>
+          
+          
+          
+        </div>
+      </header>
+
+      <div class="post-content">
+        
+        
+<div class='post'>
+Since my mobile device is a s60v3 one (Nokia E61), I found particulary difficult to develop any simple python script on the phone. The hardest thing to do was the write - test cycle.<br /><br />On linux you can't simply send the file to the phone with obex, since it will be stored in your incoming messages.<br /><br />From the excellent<a href="http://www.mobilenin.com/"> Jürgen Scheible</a>'s tutorial website I discovered the existance of the nice putools for making easier the development cycle <a href="http://people.csail.mit.edu/kapu/symbian/python.html">here</a><br /><br />It allows you to sync and reload the scripts on the phone directly from the pc.<br /><br />Unfortunately, the instructions in the website are for a windows machine, but the whole tool is python based, so it is supposed do be (and it is) multiplatform.<br /><br />In the sync.config file you are asked to choose the right serial port over bluetooth file, which can be one of /dev/rfcommxx<br />ie: COM_PORT = '/dev/rfcomm2' instead of windows COMxx port<br /><br />The first problem I had then was related to a bug of my ubuntu distribution (8.04) described <a href="https://bugs.launchpad.net/ubuntu/+source/bluez-utils/+bug/227429">here</a>  which can be easly fixed installing the bluez-utils package from Debian Sid<br /><br />At this point, you can follow the instruction on the putools website by opening a serial port<br /><span style="font-family:trebuchet ms;"> $ sdptool add --channel=2 SP</span><br /><br /><span style="font-family:trebuchet ms;"> $ rfcomm listen rfcomm2 2 </span><br /><br />and launching the script on the phone and finally launching from another shell the push command from the pcfiles folder.</div>
+<h2>Comments</h2>
+<div class='comments'>
+<div class='comment'>
+<div class='author'>Deuce868</div>
+<div class='content'>
+nvm, got it working by changing the com port in the config from just 3 to the entire /dev... path<BR/><BR/>Thanks for the excellent post.</div>
+</div>
+<div class='comment'>
+<div class='author'>Deuce868</div>
+<div class='content'>
+Other than the bug in the ubuntu package, any idea why I'd get the "port not open" exception? <BR/><BR/>I'm running intrepid which has the updated bluez-utils package, but wheneven I try push I get:<BR/>python push<BR/>file /home/rharding/.push/config<BR/>Connecting to serial port /dev/ttyS2<BR/>Traceback (most recent call last):<BR/>  File "push", line 75, in module<BR/>    main()<BR/>  File "push", line 55, in main<BR/>    app = App(0)<BR/>  File "/usr/lib/python2.5/site-packages/wx-2.8-gtk2-unicode/wx/_core.py", line 7912, in __init__<BR/>    self._BootstrapApp()<BR/>  File "/usr/lib/python2.5/site-packages/wx-2.8-gtk2-unicode/wx/_core.py", line 7487, in _BootstrapApp<BR/>    return _core_.PyApp__BootstrapApp(*args, **kwargs)<BR/>  File "push", line 38, in OnInit<BR/>    title='push' )<BR/>  File "/home/rharding/Desktop/putools/pcfiles/phoneshell.py", line 56, in __init__<BR/>    *args, **kwds)<BR/>  File "/home/rharding/Desktop/putools/pcfiles/phoneshell.py", line 243, in __init__<BR/>    *args, **kwds)<BR/>  File "/home/rharding/Desktop/putools/pcfiles/btinterpreter.py", line 105, in __init__<BR/>    self.bt.send( 'reset' )<BR/>  File "/home/rharding/Desktop/putools/pcfiles/../libs/phcomm.py", line 339, in send<BR/>    self.write( cmd )<BR/>  File "/home/rharding/Desktop/putools/pcfiles/../libs/phcomm.py", line 367, in write<BR/>    self.sock.send(msg)<BR/>  File "/home/rharding/Desktop/putools/pcfiles/../libs/phcomm.py", line 147, in send<BR/>    self.file.write( msg )<BR/>  File "/usr/lib/python2.5/site-packages/serial/serialposix.py", line 328, in write<BR/>    if self.fd is None: raise portNotOpenError<BR/>serial.serialutil.SerialException: Port not open</div>
+</div>
+</div>
+
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "fedepaolgithubio" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+    2024
+     Federico Paolinelli 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js" integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+  
+
+  
+
+  
+
+
+  
+<script>
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-16514009-2', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>
