@@ -1,16 +1,16 @@
 ---
-draft: true
 title: "Some notes about ARP suppression in L2EVPN using FRR and Linux VXLans"
-date: 2024-05-17T12:14:10+02:00
+date: 2024-05-21T12:14:10+02:00
 categories: ["networking", "frr"]
 description: Details on ARP suppression in Linux with FRR and L2EVPN VXLans
 ---
 
-# EVPN - ARP suppression
+# EVPN - ARP suppression and Type 2 networks with IP
 
-This post was meant to be a section of my previous [post about L2 tunnels with EVPN and VXLans]({{< relref "./evpn-l2.md" >}}),
-but this particular topic kept me so busy that is probably worth a section of its own. Because of this, the topology this post
-is referring to is still the same:
+This post started as a section of my previous [post about L2 tunnels with EVPN and VXLans]({{< relref "./evpn-l2.md" >}}),
+but this particular topic kept me so busy that is probably worth a section of its own.
+
+The topology this post is referring to is still the same:
 
 
 ```bash
@@ -46,7 +46,7 @@ Type 2 EVPN routes.
 
 ## ARP suppression and FRR
 
-The [FRR documentation](https://docs.frrouting.org/en/latest/evpn.html#linux-interface-configuration) say clearly that ARP suppression
+The [FRR documentation](https://docs.frrouting.org/en/latest/evpn.html#linux-interface-configuration) says clearly that ARP suppression
 is not FRR's responsibility:
 
 ```raw
@@ -204,3 +204,8 @@ the HOST's interface.
 What I showed here is just an example to show the mechanics of ARP suppression (and Type 2 routes with IP)
 with FRR and Linux. My understanding is that there are scenarios where this is worked around by
 forcing those neighbor entries (such as Cumulus Linux with `neighmgrd`).
+
+Also, big thanks to [Lorenzo Bianconi](https://x.com/_lrnzbncn_) and to the Joolli user on the FRR slack channel, who helped me
+triaging and better understanding this behaviour.
+
+And as per the previous posts, if something is not accurate please let me know or leave a comment!
