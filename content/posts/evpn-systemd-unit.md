@@ -1,5 +1,5 @@
 ---
-title: "Enabling EVPN termination via systemd units"
+title: "Enabling EVPN termination with Podman pods as systemd units"
 date: 2025-01-06T21:33:24+01:00
 ---
 
@@ -14,7 +14,7 @@ hosting FRR inside a regular network-namespaced pod interacting with the host vi
 
 I also described how running inside a pod is limiting this architecture and prototype to serve the node's main interface, because of the chicken egg-y issue of needing the underlay network to allow each node to reach the API server, while at the same time the configuration required to establish the underlay must be retrieved from the API server itself.
 
-In this post, I am going to take a step further by **running the two pods as systemd units**. The architecture is more or less the same, with the biggest difference being of having podman pods running as systemd units.
+In this post, I am going to take a step further by **running the two pods as podman systemd units**. The architecture is more or less the same, with the biggest difference being of having podman pods running as systemd units.
 
 
 ## Rethinking the architecture
@@ -63,7 +63,7 @@ I managed to have a decent prototype of the described behaviour by:
 - having a script listening for connections and reloading
 - having the controller running a bunch of `ip netns exec` commands to configure the interfaces in the FRR namespace
 
-## Running podman pods as systemd units
+## Running Podman pods as systemd units
 
 Now that we know the moving parts, let's deploy them as podman pods / systemd units.
 
@@ -124,10 +124,10 @@ NETNS=$(ip netns identify $FRRPID)
 
 With that, I was able to consume the target namespace and provide the configuration required.
 
-## Running podman inside kind
+## Seeing it in action with Podman, ContainerLab and Kind
 
 Surprisingly, it works! I have an (almost) working prototype under my [evpn lab](https://github.com/fedepaol/evpnlab/tree/main/08_from_kind_with_systemdunits) repo, where I was able to test the topology described in the previous post with
-ContainerLab, Kind and podman running inside the Kind node (!!!!).
+ContainerLab, Kind and podman running inside the Kind node (a docker container !!!!).
 
 The ContainerLab setup looks like this
 
@@ -155,4 +155,6 @@ PING 10.244.0.6 (10.244.0.6) 56(84) bytes of data.
 
 ## Wrapping up
 
-This is another step in the direction of implementing a Provider Edge Router inside a kubernetes node, to provide connectivity that goes beyond extra networks. Additionally, we revisited the architecture and how the components interact, providing a better separation of responsibilities.
+Having the flexibility of Kubernetes for handling the lifecycle of our EVPN pod is great, but comes with a limitation, as I wrote in the beginning. Having it running as a systemd unit allows to provide connectivity that goes beyond extra networks.
+
+Additionally, we revisited the architecture and how the components interact, providing a better separation of responsibilities.
