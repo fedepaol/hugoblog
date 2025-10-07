@@ -5,7 +5,8 @@ theme = "hugo-coder"
 #theme = "charaka-hugo-theme"
 disqusShortname = "fedepaolgithubio"
 googleAnalytics = "UA-16514009-2"
-paginate = 20
+[pagination]
+pagerSize = 20
 enableEmoji = true
 # Specify light/dark colorscheme
 # Supported values:
@@ -59,6 +60,9 @@ maxSeeAlsoItems = 5
 [markup.highlight]
 noClasses = false
 style = "monokai"
+
+[markup.goldmark.renderer]
+unsafe = true
 
 # If you want to use Google Tag Manager(https://analytics.google.com/) for analytics, add this section
 # [params.googleTagManager]

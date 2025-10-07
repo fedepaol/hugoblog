@@ -2,7 +2,6 @@
 title = "Migrating from blogger to octopress done"
 date = "2014-08-24"
 slug = "2014/08/24/migrating-from-blogger-to-octopress-done"
-published = true
 Categories = ["octopress", "blog", "python"]
 +++
 It feels a bit like this ![Light bulb](http://i.imgur.com/t0XHtgJ.gif)
