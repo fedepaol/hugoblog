@@ -15,17 +15,17 @@ I run Claude Code with `--dangerously-skip-permissions` inside a libvirt VM. Run
 
 I work with tmux and keep at most 3 sessions running in parallel, each working on a different task. Beyond that, it becomes hard to keep up — I want to review what each agent produces before moving forward, and three is about the limit where I can do that without losing track. I found Mitchell's Hashimoto suggestion to always have an agent running interesting, and trying to build my own variation of it. It's also true that sometimes I need to stop and gather all the open threads I left hanging, so I don't want to have too many of them.
 
-I also use [caveman](https://github.com/nickvdyck/caveman) to cut down Claude's verbosity and reduce the number of tokens a bit. By default it narrates everything it's doing in great detail, which I find more distracting than helpful. I don't need the narration, I just need the results.
+I also use [caveman](https://github.com/JuliusBrussee/caveman/) to cut down Claude's verbosity and reduce the number of tokens a bit. By default it narrates everything it's doing in great detail, which I find more distracting than helpful. I don't need the narration, I just need the results.
 
 ## Adding new features to the projects I am working on
 
 This is the most obvious use case and probably where I get the most value. I work primarily on [MetalLB](https://github.com/metallb/metallb) and [OpenPerouter](https://github.com/openperouter/openperouter), both of which are non-trivial Go projects with real users, so the bar for quality is high.
 
-I use [speckit](https://github.com/fedepaol/speckit) intensively. Unsurprisingly, the more time I spend upfront drafting a precise spec and carefully reviewing each intermediate artifact — the plan, the task breakdown — the less I need to iterate on the generated code. Vague instructions produce vague code. A well-structured spec acts as a forcing function that keeps the agent on track and reduces the number of correction cycles significantly. Also, if I have a specific structure or architecture in mind and I describe it carefully, the quality of the output is much better.
+I use [speckit](https://github.com/github/spec-kit) intensively. Unsurprisingly, the more time I spend upfront drafting a precise spec and carefully reviewing each intermediate artifact — the plan, the task breakdown — the less I need to iterate on the generated code. Vague instructions produce vague code. A well-structured spec acts as a forcing function that keeps the agent on track and reduces the number of correction cycles significantly. Also, if I have a specific structure or architecture in mind and I describe it carefully, the quality of the output is much better.
 
 For larger features I enable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` and spin up a team: typically 3 coding agents working in parallel, 1 reviewer, and 1 QE agent writing tests alongside the implementation. For smaller, well-scoped changes a `context.md` file with hand-written instructions is sufficient — no need to over-engineer the scaffolding.
 
-Once the code is generated I use [diffity](https://github.com/fedepaol/diffity) to review it. It gives me a convenient way to annotate the diff with comments and then ask the agents to iterate on them. It's a tighter feedback loop than editing files by hand.
+Once the code is generated I use [diffity](https://github.com/nilbuild/diffity) to review it. It gives me a convenient way to annotate the diff with comments and then ask the agents to iterate on them. It's a tighter feedback loop than editing files by hand.
 
 So why I am not pushing out one thing after the other? The initial outcome, even after I've reviewed it, is never the finished product. It still has to pass CI (and we know it's painful!), and it still has to survive the GitHub review process. Real reviewers (or other agents) catch things that neither I nor the agent noticed. When a comment is straightforward to address, I just tell the agent to read the review and fix it. For anything more subtle, I stay involved.
 
